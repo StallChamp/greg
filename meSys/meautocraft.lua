@@ -6,7 +6,7 @@ package.loaded["aItems"] = nil
 local items = require("aItems")
 print("loaded item count", #items)
 
-loopDelay = 60 -- Seconds between runs
+LoopDelay = 60 -- Seconds between runs
 
 function getMeContent ()
     return meController.getItemsInNetwork({
@@ -23,12 +23,15 @@ while true do
         CurMaxRequest = items[curIdx][4]
 
         -- io.write("Checking for " .. curMinValue .. " of " .. curName .. "\n")
-        
-        if pcall(getMeContent()) then
-            local storedItem = getMeContent()
+        local success, storedItem = pcall(meController.getItemsInNetwork, {
+        name = CurName,
+        damage = CurDamage
+        })
+
+        if not success then
+        print("Error retrieving items:", storedItem)
         else
-            goto continue
-        end
+
         io.write("Network contains ")
         gpu.setForeground(0xCC24C0) -- Purple-ish
         io.write(storedItem[1].size)
@@ -40,8 +43,8 @@ while true do
         if storedItem[1].size < CurMinValue then
             local delta = CurMinValue - storedItem[1].size
             local craftAmount = delta
-            if delta > curMaxRequest then
-                craftAmount = curMaxRequest
+            if delta > CurMaxRequest then
+                craftAmount = CurMaxRequest
             end
 
             io.write("  Need to craft ")
@@ -74,8 +77,9 @@ while true do
                 gpu.setForeground(0xFFFFFF) -- White
             end
         end
+    end
         ::continue::
     end
-    io.write("Sleeping for " .. loopDelay .. " seconds...\n\n")
-    os.sleep(loopDelay)
+    io.write("Sleeping for " .. LoopDelay .. " seconds...\n\n")
+    os.sleep(LoopDelay)
 end
