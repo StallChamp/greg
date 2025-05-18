@@ -8,18 +8,27 @@ print("loaded item count", #items)
 
 loopDelay = 60 -- Seconds between runs
 
+function getMeContent ()
+    return meController.getItemsInNetwork({
+            name = CurName,
+            damage = CurDamage
+        })
+end
+
 while true do
     for curIdx = 1, #items do
-        curName = items[curIdx][1]
-        curDamage = items[curIdx][2]
-        curMinValue = items[curIdx][3]
-        curMaxRequest = items[curIdx][4]
+        CurName = items[curIdx][1]
+        CurDamage = items[curIdx][2]
+        CurMinValue = items[curIdx][3]
+        CurMaxRequest = items[curIdx][4]
 
         -- io.write("Checking for " .. curMinValue .. " of " .. curName .. "\n")
-        storedItem = meController.getItemsInNetwork({
-            name = curName,
-            damage = curDamage
-        })
+        
+        if pcall(getMeContent()) then
+            local storedItem = getMeContent()
+        else
+            goto continue
+        end
         io.write("Network contains ")
         gpu.setForeground(0xCC24C0) -- Purple-ish
         io.write(storedItem[1].size)
@@ -28,9 +37,9 @@ while true do
         gpu.setForeground(0x00FF00) -- Green
         io.write(storedItem[1].label .. "\n")
         gpu.setForeground(0xFFFFFF) -- White
-        if storedItem[1].size < curMinValue then
-            delta = curMinValue - storedItem[1].size
-            craftAmount = delta
+        if storedItem[1].size < CurMinValue then
+            local delta = CurMinValue - storedItem[1].size
+            local craftAmount = delta
             if delta > curMaxRequest then
                 craftAmount = curMaxRequest
             end
@@ -44,15 +53,20 @@ while true do
             io.write(craftAmount .. "... ")
             gpu.setForeground(0xFFFFFF) -- White
 
-            craftables = meController.getCraftables({
-                name = curName,
-                damage = curDamage
+            local craftables = meController.getCraftables({
+                name = CurName,
+                damage = CurDamage
             })
             if #craftables >= 1 then
-                cItem = craftables[1]
-                retval = cItem.request(craftAmount)
-                gpu.setForeground(0x00FF00) -- Green
+                local cItem = craftables[1]
+                local requestSuccess, retval = pcall(cItem.request(craftAmount))
+                if requestSuccess then
+                    gpu.setForeground(0x00FF00) -- Green
                 io.write("OK\n")
+                else
+                    gpu.setForeground(0xFF0000) -- Red
+                    io.write("Request failed")
+                end
                 gpu.setForeground(0xFFFFFF) -- White
             else
                 gpu.setForeground(0xFF0000) -- Red
@@ -60,6 +74,7 @@ while true do
                 gpu.setForeground(0xFFFFFF) -- White
             end
         end
+        ::continue::
     end
     io.write("Sleeping for " .. loopDelay .. " seconds...\n\n")
     os.sleep(loopDelay)
